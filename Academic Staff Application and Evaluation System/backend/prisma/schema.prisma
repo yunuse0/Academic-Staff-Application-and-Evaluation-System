@@ -1,0 +1,533 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADAY
+  ADMIN
+  YONETICI
+  JURI_UYESI
+}
+
+model Kullanici {
+  id                      Int                     @id @default(autoincrement())
+  ad                      String                  @db.VarChar(100)
+  soyad                   String                  @db.VarChar(100)
+  parola                  String
+  tcKimlikNo              String                  @unique @db.VarChar(11)
+  role                    Role                    @default(ADAY)
+  birimId                 Int?
+  kayitTarihi             DateTime                @default(now())
+  basvurular              Basvurular[]
+  juriDegerlendirmeleri   JuriDegerlendirme[]     @relation("JuriRelation")
+  adayDegerlendirmeleri   JuriDegerlendirme[]     @relation("AdayRelation")
+  Oduller                 Oduller[]
+  Makaleler               Makaleler[]
+  Kitaplar                Kitaplar[]
+  Atiflar                 Atiflar[]
+  EgitimOgretim           EgitimOgretim[]
+  TezYoneticiligi         TezYoneticiligi[]
+  Patentler               Patentler[]
+  BilimselToplantilar     BilimselToplantilar[]
+  ArastirmaProjeleri      ArastirmaProjeleri[]
+  EditorlukFaaliyetleri   EditorlukFaaliyetleri[]
+  GuzelSanatlarFaaliyetleri GuzelSanatlarFaaliyetleri[]
+  IdariGorevler           IdariGorevler[]
+  ToplamPuanlama          ToplamPuanlama?
+
+   ilanlar                 Ilanlar[]               @relation("IlanJuriRelation")
+}
+
+
+enum IlanDurum {
+  ACIK
+  KAPALI
+}
+
+enum BasvuruDurum {
+  BEKLIYOR
+  KABUL
+  RED
+}
+
+enum KadroTuru {
+  DR_OGR_UYESI
+  DOCENT
+  PROFESOR
+}
+
+model Ilanlar {
+  id              Int          @id @default(autoincrement())
+  baslik          String       @db.VarChar(255)
+  aciklama        String       @db.Text
+  kadro           KadroTuru
+  baslangicTarihi DateTime
+  bitisTarihi     DateTime
+  kriterler       String       @db.VarChar(255)
+  durum           IlanDurum    @default(ACIK)
+  basvuruSayisi   Int          @default(0)
+  basvurular      Basvurular[]
+
+  juri            Kullanici[]  @relation("IlanJuriRelation")
+}
+
+model Basvurular {
+  id          Int          @id @default(autoincrement())
+  kullaniciId Int
+  ilanId      Int
+  durum       BasvuruDurum @default(BEKLIYOR)
+  tarih       DateTime     @default(now())
+  kullanici   Kullanici @relation(fields: [kullaniciId], references: [id])
+  ilan        Ilanlar     @relation(fields: [ilanId], references: [id])
+}
+
+
+
+model JuriDegerlendirme {
+  id                Int               @id @default(autoincrement())
+  juri              Kullanici         @relation("JuriRelation", fields: [juriId], references: [id])
+  juriId            Int
+  aday              Kullanici         @relation("AdayRelation", fields: [adayId], references: [id])
+  adayId            Int
+  rapor             String
+  puan              Float?              @default(0)
+  tarih             DateTime          @default(now())
+}
+
+
+enum IndeksTuru {
+  SSCI_Q1
+  SSCI_Q2
+  SSCI_Q3
+  SSCI_Q4
+  ESCI
+  SCOPUS
+  DIGER_ULUSLARARASI
+  ULAKBIM
+  DIGER_ULUSAL
+}
+
+model Makaleler {
+  id          Int       @id @default(autoincrement())
+  kullanici   Kullanici @relation(fields: [kullaniciId], references: [id])
+  kullaniciId Int
+  yayinAdi    String    @db.VarChar(255)
+  dergiAdi    String    @db.VarChar(255)
+  ciltNo      String?   @db.VarChar(50)
+  sayfaNo     String?   @db.VarChar(50)
+  yil         Int
+  puan        Float?
+  dosyaYolu   String?     
+  indeksTuru  IndeksTuru
+  createdAt   DateTime  @default(now())
+}
+
+enum KitapTuru {
+  ULUSLARARASI_OZGUN_KITAP
+  ULUSLARARASI_BOLUM_YAZARLIGI
+  ULUSLARARASI_ANSIKLOPEDI
+  ULUSAL_OZGUN_KITAP
+  ULUSAL_BOLUM_YAZARLIGI
+  TAM_KITAP_CEVIRISI
+  CEVIRI_BOLUM_YAZARLIGI
+  ULUSAL_ANSIKLOPEDI
+}
+
+model Kitaplar {
+  id                Int          @id @default(autoincrement())
+  kullanici         Kullanici    @relation(fields: [kullaniciId], references: [id])
+  kullaniciId       Int
+  kitapAdi          String       @db.VarChar(255)
+  yayinevi          String       @db.VarChar(255)
+  baskiSayisi       Int
+  yayinYeri         String?
+  yil               Int
+  tur               KitapTuru
+  puan              Float?
+  createdAt         DateTime     @default(now())
+}
+
+enum AtifTuru {
+  SCI_E_SSCI_AHCI    
+  E_SCI              
+  ULUSLARARASI       
+  ULUSAL             
+  GUZEL_SANATLAR_ULUSLARARASI  
+  GUZEL_SANATLAR_ULUSAL        
+}
+
+model Atiflar {
+  id               Int         @id @default(autoincrement())
+  kullanici        Kullanici   @relation(fields: [kullaniciId], references: [id])
+  kullaniciId      Int
+  atifYapanEser    String      @db.VarChar(255)
+  atifSayisi       Int         @default(1)
+  indeks           AtifTuru
+  puan             Float?     
+  createdAt        DateTime    @default(now())
+}
+
+enum DersTuru {
+  ONLISANS_LISANS
+  ONLISANS_LISANS_YD
+  LISANSUSTU
+  LISANSUSTU_YD
+}
+
+enum DersDonemi{
+  BAHAR
+  GUZ
+}
+
+model EgitimOgretim {
+  id               Int         @id @default(autoincrement())
+  kullanici        Kullanici   @relation(fields: [kullaniciId], references: [id])
+  kullaniciId      Int
+  dersAdi          String      @db.VarChar(255)
+  programAdi       String      @db.VarChar(255)
+  dersTuru         DersTuru
+  dersDonemi       DersDonemi
+  yil              Int
+  puan             Float?
+  createdAt        DateTime    @default(now())
+}
+
+
+enum TezTuru {
+  DOKTORA_SANATTA_YETERLIK_UZMANLIK
+  YUKSEK_LISANS_TEZ_YONETIMI
+  DOKTORA_SANATTA_YETERLIK_ES_DANISMAN
+  YUKSEK_LISANS_SANATTA_ES_DANISMAN
+}
+
+model TezYoneticiligi {
+  id           Int       @id @default(autoincrement())
+  kullanici    Kullanici @relation(fields: [kullaniciId], references: [id])
+  kullaniciId  Int
+  ogrenciAdi   String    @db.VarChar(255)
+  tezAdi       String    @db.VarChar(255)
+  enstitu      String?
+  yil          Int
+  tezTuru      TezTuru
+  puan         Float?
+  createdAt    DateTime  @default(now())
+}
+
+
+enum PatentTuru {
+  ULUSLARARASI_LISANSLANAN_PATENT
+  ULUSLARARASI_TESCILLENMIS_PATENT
+  ULUSLARARASI_PATENT_BASVURUSU
+  ULUSAL_LISANSLANAN_PATENT
+  ULUSAL_TESCILLENMIS_PATENT
+  ULUSAL_PATENT_BASVURUSU
+  LISANSLANAN_FAYDALI_MODEL_ENDUSTRIEL_TASARIM_MARKA
+  FAYDALI_MODEL_ENDUSTRIEL_TASARIM
+}
+
+model Patentler {
+  id           Int         @id @default(autoincrement())
+  kullanici    Kullanici   @relation(fields: [kullaniciId], references: [id])
+  kullaniciId  Int
+  patentAdi    String      @db.VarChar(255)
+  patentTuru   PatentTuru
+  yil          Int
+  puan         Float?
+  createdAt    DateTime    @default(now())
+}
+
+enum EtkinlikTuru {
+  ULUSLARARASI_TAM_METIN_SUNUM
+  ULUSLARARASI_OZET_SUNUM
+  ULUSLARARASI_POSTER
+  ULUSAL_TAM_METIN_SUNUM
+  ULUSAL_OZET_SUNUM
+  ULUSAL_POSTER
+  ULUSLARARASI_KURUL_UYELIGI
+  ULUSAL_KURUL_UYELIGI
+  ULUSLARARASI_DAVETLI_KONUSMACI
+  ULUSAL_DAVETLI_KONUSMACI
+  ATOLYE_ORGANIZASYON
+  ATOLYE_KONUSMACI
+}
+
+model BilimselToplantilar {
+  id            Int          @id @default(autoincrement())
+  kullanici     Kullanici    @relation(fields: [kullaniciId], references: [id])
+  kullaniciId   Int
+  konferansAdi  String?      @db.VarChar(255)  // nullable olarak eklendi
+  bildiriAdi    String?      @db.VarChar(255)  // nullable olarak eklendi
+  etkinlikTuru  EtkinlikTuru
+  sayfaSayisi   Int?                         
+  tarih         DateTime
+  yer           String?      @db.VarChar(255)
+  puan          Float?
+  createdAt     DateTime     @default(now())
+}
+
+
+enum ArastirmaProjeTuru {
+  P1
+  P2
+  P3
+  P4
+  P5
+  P6
+  P7
+  P8
+  P9
+  P10
+  P11
+  P12
+  P13
+  P14
+  P15
+  P16
+  P17
+  P18
+  P19
+  P20
+  P21
+  P22
+  P23
+  P24
+  P25
+  P26
+  P27
+  P28
+}
+
+model ArastirmaProjeleri {
+  id             Int                  @id @default(autoincrement())
+  kullanici      Kullanici            @relation(fields: [kullaniciId], references: [id])
+  kullaniciId    Int
+  projeAdi       String               @db.VarChar(255)
+  projeTuru      ArastirmaProjeTuru
+  yil            Int
+  baslamaTarihi  DateTime
+  bitisTarihi    DateTime
+  sure           Int
+  butce          Float
+  puan           Float?
+  createdAt      DateTime             @default(now())
+}
+
+enum EditorlukTuru {
+  E1
+  E2
+  E3
+  E4
+  E5
+  E6
+  E7
+  E8
+  E9
+  E10
+  E11
+  E12
+  E13
+}
+
+model EditorlukFaaliyetleri {
+  id           Int          @id @default(autoincrement())
+  kullanici    Kullanici    @relation(fields: [kullaniciId], references: [id])
+  kullaniciId  Int
+  dergiAdi     String       @db.VarChar(255)
+  editTuru     EditorlukTuru
+  yil          Int
+  puan         Float?
+  createdAt    DateTime     @default(now())
+}
+
+  enum OdulTuru {
+    JURILI_ULUSLARARASI
+    TUBITAK_BILIM_OZEL_HIZMET
+    TUBA_AKADEMI_ODUL
+    TUBITAK_TESIK
+    TUBA_GEBIP_TESEP
+    JURILI_ULUSAL
+    JURI_DEGIL
+    INTERNATIONAL_YARIŞMA_BIRINCI
+    INTERNATIONAL_YARIŞMA_IKINCI
+    INTERNATIONAL_YARIŞMA_UCUNCU
+    NATIONAL_YARIŞMA_BIRINCI
+    NATIONAL_YARIŞMA_IKINCI
+    NATIONAL_YARIŞMA_UCUNCU
+    INTERNATIONAL_TOPLANTI
+    NATIONAL_TOPLANTI
+    INTERNATIONAL_SANAT_ODUL
+    NATIONAL_SANAT_ODUL
+    UNIVERSITE_KURUMSAL
+    BILIMSEL_ESER
+  }
+
+  model Oduller {
+    id           Int        @id @default(autoincrement())
+    kullanici    Kullanici  @relation(fields: [kullaniciId], references: [id])
+    kullaniciId  Int
+    odulAdi      String     @db.VarChar(255)
+    odulTuru    OdulTuru
+    yil          Int
+    puan         Float?
+    createdAt    DateTime   @default(now())
+  }
+
+  enum IdariGorevTuru {
+    I1
+    I2
+    I3
+    I4
+    I5
+    I6
+    I7
+    I8
+    I9
+    I10
+    I11
+    I12
+  }
+
+  model IdariGorevler {
+    id             Int            @id @default(autoincrement())
+    kullanici      Kullanici      @relation(fields: [kullaniciId], references: [id])
+    kullaniciId    Int
+    gorevAdi       String         @db.VarChar(255)
+    gorevTuru      IdariGorevTuru
+    baslamaTarihi  DateTime
+    bitisTarihi    DateTime
+    sure           Int
+    puan           Float?
+    createdAt      DateTime       @default(now())
+  }
+
+enum GuzelSanatlarFaaliyetTuru {
+  GS1
+  GS2
+  GS3
+  GS4
+  GS5
+  GS6
+  GS7
+  GS8
+  GS9
+  GS10
+  GS11
+  GS12
+  GS13
+  GS14
+  GS15
+  GS16
+  GS17
+  GS18
+  GS19
+  GS20
+  GS21
+  GS22
+  GS23
+  GS24
+  GS25
+  GS26
+  GS27
+  GS28
+  GS29
+  GS30
+  GS31
+  GS32
+  GS33
+  GS34
+  GS35
+  GS36
+  GS37
+  GS38
+  GS39
+  GS40
+  GS41
+  GS42
+  GS43
+  GS44
+  GS45
+  GS46
+  GS47
+  GS48
+  GS49
+  GS50
+  GS51
+  GS52
+  GS53
+  GS54
+  GS55
+  GS56
+  GS57
+  GS58
+  GS59
+  GS60
+  GS61
+  GS62
+  GS63
+  GS64
+  GS65
+  GS66
+  GS67
+  GS68
+  GS69
+  GS70
+  GS71
+  GS72
+  GS73
+  GS74
+  GS75
+  GS76
+  GS77
+  GS78
+  GS79
+  GS80
+  GS81
+  GS82
+  GS83
+  GS84
+  GS85
+  GS86
+  GS87
+  GS88
+  GS89
+  GS90
+  GS91
+  GS92
+  GS93
+  GS94
+  GS95
+  GS96
+  GS97
+  GS98
+  GS99
+  GS100
+  GS101
+  GS102
+  GS103
+  GS104
+  GS105
+}
+
+model GuzelSanatlarFaaliyetleri {
+  id            Int                       @id @default(autoincrement())
+  kullanici     Kullanici                 @relation(fields: [kullaniciId], references: [id])
+  kullaniciId   Int
+  faaliyetAdi  String                    @db.VarChar(255)
+  faaliyetTuru GuzelSanatlarFaaliyetTuru
+  yil           Int
+  puan          Float?
+  createdAt     DateTime                  @default(now())
+}
+
+
+model ToplamPuanlama {
+  id          Int         @id @default(autoincrement())
+  kullaniciId Int         @unique
+  puan        Float?        @default(0)
+  kullanici   Kullanici   @relation(fields: [kullaniciId], references: [id])
+}
