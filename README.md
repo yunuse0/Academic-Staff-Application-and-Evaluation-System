@@ -6,4 +6,4 @@ Administrators can assign juries to job announcements, and jury members evaluate
 
 ---
 
-You can see the details and project operation in the file "36_Report.pdf"
+You can see the details and project operation in the file "36_report.pdf"
